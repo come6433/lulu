@@ -378,25 +378,44 @@ def main():
         print(f"사용자 요소를 클릭했습니다. (tag={target.tag_name})")
 
         # 5) 비밀번호를 #input_cert_pw에 입력 (같은 iframe 안)
-        try:
-            pw_input = wait.until(EC.presence_of_element_located((By.ID, "input_cert_pw")))
-            pw_input.clear()
-            pw_input.send_keys(PASSWORD)
-            entered_len = driver.execute_script("return arguments[0].value.length;", pw_input)
-            print(f"비밀번호를 입력했습니다. (입력된 글자 수: {entered_len})")
-        except TimeoutException:
-            print("비밀번호 입력 필드 #input_cert_pw를 찾지 못했습니다.")
+        # GPKI가 사용자 클릭 직후 DOM을 재렌더링하므로 stale 발생 가능 -> 재시도 패턴 적용
+        pw_ok = False
+        for attempt in range(1, 4):
+            try:
+                pw_input = wait.until(EC.presence_of_element_located((By.ID, "input_cert_pw")))
+                pw_input.clear()
+                pw_input.send_keys(PASSWORD)
+                entered_len = driver.execute_script("return arguments[0].value.length;", pw_input)
+                if entered_len == len(PASSWORD):
+                    print(f"비밀번호를 입력했습니다. (시도 {attempt}, 입력된 글자 수: {entered_len})")
+                    pw_ok = True
+                    break
+                print(f"비밀번호 입력 검증 실패 (시도 {attempt}, 입력됨: {entered_len}자). 재시도합니다.")
+            except Exception as e:
+                print(f"비밀번호 입력 시도 {attempt} 실패 ({type(e).__name__}). 요소를 다시 찾습니다.")
+                time.sleep(0.5)
+        if not pw_ok:
+            print("비밀번호 입력에 최종 실패했습니다.")
             dump_state(driver, "step4_pw_field")
             driver.switch_to.default_content()
             return 4
 
-        # 6) 확인 버튼 클릭 (같은 iframe 안)
+        # 6) 확인 버튼 클릭 (같은 iframe 안) - stale 대응 재시도
         confirm_xpath = '//*[@id="btn_confirm_iframe"]/span'
-        try:
-            click_element_when_ready(driver, By.XPATH, confirm_xpath, timeout=10)
-            print("확인 버튼을 클릭했습니다.")
-        except TimeoutException:
-            print("확인 버튼을 찾지 못했거나 클릭할 수 없습니다.")
+        confirm_ok = False
+        for attempt in range(1, 4):
+            try:
+                click_element_when_ready(driver, By.XPATH, confirm_xpath, timeout=10)
+                print(f"확인 버튼을 클릭했습니다. (시도 {attempt})")
+                confirm_ok = True
+                break
+            except Exception as e:
+                if isinstance(e, TimeoutException):
+                    print("확인 버튼을 찾지 못했거나 클릭할 수 없습니다.")
+                    break
+                print(f"확인 버튼 클릭 시도 {attempt} 실패 ({type(e).__name__}). 재시도합니다.")
+                time.sleep(0.5)
+        if not confirm_ok:
             dump_state(driver, "step5_confirm_btn")
             driver.switch_to.default_content()
             return 5
