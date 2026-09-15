@@ -1,0 +1,10 @@
+selenium>=4.0
+webdriver-manager>=4.0
+CaptchaCracker
+# CaptchaCracker가 의존성 선언을 안 해서 직접 명시
+# Python 3.11 기준 검증된 호환 조합으로 버전 고정
+tensorflow==2.12.0
+numpy<2.0
+opencv-python
+Pillow
+matplotlib

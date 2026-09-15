@@ -1,0 +1,15 @@
+# 가상환경 (run.bat이 생성하는 venv 포함)
+.venv/
+venv/
+
+# 민감 정보 (비밀번호 평문 저장됨)
+config.json
+
+# 실행 산출물
+logs/
+target.png
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
